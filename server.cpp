@@ -1,4 +1,6 @@
 #include <iostream>
+#include <stdio.h>
+#include <mysql.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -6,8 +8,15 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string>
 
 using namespace std;
+
+void finish_with_error(MYSQL *conn) {
+	fprintf(stderr, "%s\n", mysql_error(conn));
+	mysql_close(conn);
+	exit(1);
+}
 
 int main() {
 	int listensd; 
@@ -19,6 +28,13 @@ int main() {
 	struct sockaddr_in serverAddr; //containing server address 
 	struct sockaddr_in clientAddr;
 	socklen_t size;
+
+	MYSQL *conn = mysql_init(NULL); //initializing object 
+
+	if(conn == NULL) {
+		fprintf(stderr, "%s\n", mysql_error(conn));
+		exit(1);
+	}	
 
 	listensd = socket(PF_INET, SOCK_STREAM, 0); //IPv4, tcp socket created
 
@@ -54,14 +70,32 @@ int main() {
 
 	cout << "=> Connection is confirmed! To end the connection, enter #." << endl;
 
+	if(mysql_real_connect(conn, "localhost", "solhee", "imEhfl25!", "chatdb", 3306, NULL, 0) == NULL) {
+		finish_with_error(conn);
+	}
+
+	if(mysql_query(conn, "CREATE TABLE IF NOT EXISTS Chatlog(Name TEXT, Content TEXT)")) {
+		finish_with_error(conn);
+	}
+
+	char strbuf[bufsize];
+	char chatContent[bufsize];
 	while(connectsd > 0) {
 		memset(recvBuffer, 0, sizeof(recvBuffer));
 		cout << "** Client: ";	
 		recv(connectsd, recvBuffer, bufsize, 0);
 		cout << recvBuffer << endl;
-
+	
 		if (*recvBuffer == '#')
-			break;
+			break;		
+
+		//strcpy(chatContent, recvBuffer);
+
+		sprintf(strbuf, "INSERT INTO Chatlog VALUES ('%s', '%s')", "Client", recvBuffer);
+
+		if(mysql_query(conn, strbuf)){
+			finish_with_error(conn);
+		}
 
 		memset (sendBuffer, 0, sizeof(sendBuffer));
 		cout << "** Server: ";
@@ -70,11 +104,21 @@ int main() {
 
 		if (*sendBuffer == '#')
 			break;
+
+		memset(chatContent, 0, sizeof(chatContent));
+		memset(strbuf, 0, sizeof(strbuf));
+		strcpy(chatContent, sendBuffer);
+		sprintf(strbuf, "INSERT INTO Chatlog VALUES ('%s', '%s')", "Server", sendBuffer);
+
+		if(mysql_query(conn, strbuf)){
+			finish_with_error(conn);
+		}
 	}	
 
 	cout << "=> Ended connection..." << endl;
 	close(listensd);
 	close(connectsd);
+	mysql_close(conn);
 
 	return 0;
 }
