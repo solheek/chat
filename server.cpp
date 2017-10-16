@@ -79,7 +79,7 @@ int main() {
 	}
 
 	char strbuf[bufsize];
-	char chatContent[bufsize];
+
 	while(connectsd > 0) {
 		memset(recvBuffer, 0, sizeof(recvBuffer));
 		cout << "** Client: ";	
@@ -88,8 +88,6 @@ int main() {
 	
 		if (*recvBuffer == '#')
 			break;		
-
-		//strcpy(chatContent, recvBuffer);
 
 		sprintf(strbuf, "INSERT INTO Chatlog VALUES ('%s', '%s')", "Client", recvBuffer);
 
@@ -105,9 +103,7 @@ int main() {
 		if (*sendBuffer == '#')
 			break;
 
-		memset(chatContent, 0, sizeof(chatContent));
 		memset(strbuf, 0, sizeof(strbuf));
-		strcpy(chatContent, sendBuffer);
 		sprintf(strbuf, "INSERT INTO Chatlog VALUES ('%s', '%s')", "Server", sendBuffer);
 
 		if(mysql_query(conn, strbuf)){
