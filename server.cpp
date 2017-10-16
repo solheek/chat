@@ -63,6 +63,7 @@ int main() {
 		if (*recvBuffer == '#')
 			break;
 
+		memset (sendBuffer, 0, sizeof(sendBuffer));
 		cout << "** Server: ";
 		cin >> sendBuffer;
 		send(connectsd, sendBuffer, bufsize, 0);
